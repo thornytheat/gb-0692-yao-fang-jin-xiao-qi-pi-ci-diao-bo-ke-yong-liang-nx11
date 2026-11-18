@@ -3,7 +3,7 @@ import csv,io
 from app.errors import DomainError
 from app.reader import decode
 from app.pipeline import calculate
-from app.store import save, latest, history, review, get_run
+from app.store import save, latest, history, review, get_run, dispatch, transfers
 from app.web import bp as web
 
 from app.modules.m1_receiving.handler import bp as bp1
@@ -52,14 +52,22 @@ def health(): return {'status':'ok'}
 @app.route('/api/run',methods=['POST'])
 def run():
     if request.files:
-        raw=request.files['file'].read();text=decode(raw)
+        raw=request.files['file'].read();text=decode(raw);engine=None
     else:
-        payload=request.get_json(silent=True) or {};text=payload.get('csv')
-    return jsonify(save(calculate(text)))
+        payload=request.get_json(silent=True) or {};text=payload.get('csv');engine=payload.get('engine')
+    return jsonify(save(calculate(text, engine=engine)))
 @app.route('/api/runs/<ident>')
 def run_detail(ident): return jsonify(get_run(ident))
 @app.route('/api/history')
 def runs(): return jsonify(history())
+@app.route('/api/dispatch',methods=['POST'])
+def dispatch_plan():
+    body=request.get_json(silent=True) or {}
+    if not body.get('id'): raise DomainError('REQUEST','缺少批次id',400)
+    return jsonify(dispatch(body['id']))
+@app.route('/api/transfers')
+def transfer_list():
+    return jsonify(transfers(request.args['run_id']) if request.args.get('run_id') else transfers())
 @app.route('/api/review',methods=['POST'])
 def decide():
     body=request.get_json(silent=True) or {}
@@ -70,8 +78,11 @@ def decide():
 def evidence():
     result=get_run(request.args['run_id']) if request.args.get('run_id') else (latest() or save(calculate()));out=io.StringIO(newline='')
     rows=[]
+    detail_keys=('shortage_rows','warehouse_rows')
     for index,stage in result['stages'].items():
         rows.extend({'阶段':index,**r} for r in stage['rows'])
+        for key in detail_keys:
+            if key in stage: rows.extend({'阶段':index+'-'+key.rstrip('_rows'),**r} for r in stage[key])
     rows.extend({'阶段':'隔离',**r} for r in result['quarantine'])
     fields=list(dict.fromkeys(['阶段','run_id','规则版本']+[k for r in rows for k in r]))
     writer=csv.DictWriter(out,fieldnames=fields);writer.writeheader()

@@ -1,6 +1,18 @@
 from app.domain import whole,day
 from app.errors import DomainError
 from app.reasons import isolate
+from app.numeric import number
+def parse_sales(ctx, r):
+    # 月均销量为可选字段：库存行不使用；需求行缺失记 None（后续按旧规则降级），脏值隔离后同样降级。
+    raw=(r.get('monthly_sales') or '').strip()
+    if not raw: return None
+    try:
+        value=number(raw)
+        if value<0 or value!=value.to_integral_value(): raise DomainError('SALES','月均销量须为非负整数')
+        return int(value)
+    except DomainError:
+        isolate(ctx,r,'SALES','月均销量无效，销量约束降级')
+        return None
 def apply(ctx):
     stocks=[];demands=[];seen={};duplicates=0
     for r in ctx['rows']:
@@ -21,6 +33,7 @@ def apply(ctx):
                 continue
             seen[key]=fingerprint
             item={**r,'qty_n':qty,'frozen_n':frozen,'pack_n':pack,'min_days_n':days}
+            if r['kind']=='demand': item['sales_n']=parse_sales(ctx,r)
             (stocks if r['kind']=='stock' else demands).append(item)
         except DomainError as e: isolate(ctx,r,e.code,e.message)
     # Recall is dominant even when a normal copy appeared earlier.

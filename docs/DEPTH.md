@@ -28,6 +28,9 @@
 | TRAP-19 | 召回优先 | 静默覆盖或误计 | 显式裁决并保留证据 | `app/modules/m2_lots/rules.py` | `tests/test_m2.py::test_recall_dominates` |
 | TRAP-23 | 效期端点 | 静默覆盖或误计 | 显式裁决并保留证据 | `app/modules/m3_expiry/rules.py` | `tests/test_m3.py::test_expired_isolated` |
 | TRAP-26 | 陈旧复核 | 静默覆盖或误计 | 显式裁决并保留证据 | `app/modules/m7_approval/rules.py` | `tests/test_m7.py::test_review_api_stale` |
+| TRAP-31 | 近效期压慢店致报损 | 只看余期满配，到期卖不完 | 按到期前可售量设上限，卖不完留仓并逐批报告 | `app/domain.py::allocate_v2` | `tests/test_m5_v2.py::test_slow_store_capped_and_near_expiry_left_in_warehouse` |
+| TRAP-32 | 新引擎上线失败 | 旧逻辑被替换，故障即停摆 | 旧引擎保留可选，异常自动回退并隔离留证 | `app/modules/m5_allocation/rules.py` | `tests/test_m5_v2.py::test_engine_failure_falls_back_with_quarantine` |
+| TRAP-33 | 重跑重复下发/覆盖台账 | 同批再跑生成重复调拨，历史被覆盖不可恢复 | 台账只追加，幂等键去重，无更新删除接口 | `app/store.py::dispatch` | `tests/test_dispatch.py::test_dispatch_idempotent_no_duplicates` |
 
 ## 对账规则
 

@@ -11,3 +11,7 @@
 `GET /api/runs/<id>`读取指定批次；页面与证据CSV通过run_id查询参数绑定批次，模块导航保留该参数。
 
 JSON请求体必须是对象，数组、标量、null、损坏JSON及错误上传字段返回400，且不运行默认样例。
+
+`POST /api/run`与`POST /api/m5`可在JSON中带`engine`（`v2`或`legacy`）选择分配引擎，缺省取环境变量`APP_ENGINE`，再缺省为`v2`。引擎作为批次身份的一部分，同文不同引擎生成不同run_id。v2运行异常自动回退legacy并写入`ENGINE`隔离记录，旧批次与13列旧文件始终可读。
+
+`POST /api/dispatch`接收`{id}`下发调拨单：仅当批次复核状态为「通过」时允许，否则409。台账`transfers`只追加，主键`(run_id,record,lot)`配合`INSERT OR IGNORE`保证同一批数据重跑不产生重复调拨记录，且不提供更新/删除接口，已下发记录不可覆盖、可随时经`GET /api/transfers?run_id=<id>`恢复查询。返回`inserted`（本次新增）、`duplicate_skipped`（重跑跳过）、`total`（台账总数）。

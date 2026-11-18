@@ -5,5 +5,5 @@ bp=Blueprint('m5',__name__)
 @bp.route('/api/m5', methods=['GET','POST'])
 def module_5():
     payload=request.get_json(silent=True) or {}
-    result=calculate(payload.get('csv'), stop=5)
+    result=calculate(payload.get('csv'), stop=5, engine=payload.get('engine'))
     return jsonify(serial(result['stages']['5']))

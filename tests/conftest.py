@@ -6,6 +6,8 @@ def raw(): return SAMPLE.read_text(encoding='utf-8-sig')
 @pytest.fixture
 def ctx(): return calculate()
 @pytest.fixture
+def legacy_ctx(): return calculate(engine='legacy')
+@pytest.fixture
 def client(tmp_path,monkeypatch):
     monkeypatch.setenv('APP_DB',str(tmp_path/'db.sqlite3'))
     from app.main import app

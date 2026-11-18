@@ -1,2 +1,48 @@
 {% extends 'base.html' %}
-{% block stage_visual %}{% for d in run.shortages[:6] %}<div class="stock-bar"><span>{{d["门店"]}}</span><i style="width:{{d["已分配"]*2}}px"></i><b>{{d["缺口"]}} 缺口</b></div>{% endfor %}{% endblock %}
+{% block stage_panels %}
+<div class="panel-grid">
+  <section class="panel main-sheet">
+    <div class="panel__head"><h2>每单预计售完评估 / 仍缺数量</h2><span>{{current.shortage_rows|length}} 单 · 引擎 {{current.engine}}</span></div>
+    <div class="scroll">
+      <table><thead><tr>
+        <th>需求单</th><th>门店</th><th>月均销量</th><th>净需求</th><th>已分配</th><th>仍缺</th><th>预计能否售完</th>
+      </tr></thead><tbody>
+      {% for r in current.shortage_rows %}
+      <tr>
+        <td>{{r['需求单']}}</td><td>{{r['门店']}}</td><td>{{r['月均销量']}}</td>
+        <td>{{r['净需求']}}</td><td>{{r['已分配']}}</td>
+        <td class="{{'sev--severe' if r['缺口'] else ''}}">{{r['缺口']}}</td>
+        <td><span class="badge {{'badge--ok' if r['预计售完']=='可售完' else ('badge--warn' if r['预计售完'] in ('部分售完','预计滞销未发') else 'badge--muted')}}">{{r['预计售完']}}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+  </section>
+  <section class="panel main-sheet">
+    <div class="panel__head"><h2>留在中心仓的近效期量</h2><span>FEFO 后未发出批次</span></div>
+    <div class="scroll">
+      <table><thead><tr><th>药品</th><th>批号</th><th>到期日</th><th>余期(天)</th><th>仓内余量</th></tr></thead><tbody>
+      {% for r in current.warehouse_rows %}
+      <tr><td>{{r['药品']}}</td><td>{{r['批号']}}</td><td>{{r['到期日']}}</td><td>{{r['余期_天']}}</td>
+          <td class="{{'sev--warn' if r['仓内余量'] else ''}}">{{r['仓内余量']}}</td></tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+  </section>
+  <section class="panel main-sheet ledger">
+    <div class="panel__head"><h2>已下发调拨台账（只追加，重跑不重复）</h2><span id="ledger-count">读取中…</span></div>
+    <div class="scroll">
+      <table><thead><tr><th>需求单</th><th>门店</th><th>药品</th><th>批号</th><th>数量</th><th>引擎</th><th>下发时间(UTC)</th></tr></thead>
+      <tbody id="ledger-body"><tr><td colspan="7" class="empty">尚未下发。</td></tr></tbody></table>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block review_actions %}
+<button class="primary" id="dispatch">下发调拨单</button>
+{% endblock %}
+{% block stage_visual %}
+{% for d in current.shortage_rows[:6] %}
+<div class="stock-bar"><span>{{d['门店']}}</span><i style="width:{{d['已分配']*2}}px"></i><b>{{d['缺口']}} 缺口 · {{d['预计售完']}}</b></div>
+{% endfor %}
+{% endblock %}

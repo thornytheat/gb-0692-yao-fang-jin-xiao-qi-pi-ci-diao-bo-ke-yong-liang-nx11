@@ -1,6 +1,6 @@
 from app.modules.m7_approval.rules import apply
 from copy import deepcopy
-def test_plan_per_demand(ctx): assert len(ctx['stages']['7']['rows'])==18
+def test_plan_per_demand(ctx): assert len(ctx['stages']['7']['rows'])==20
 def test_plan_revision(ctx): # TRAP-26
     assert all(r['计划版本']==1 for r in ctx['stages']['7']['rows'])
 def test_known_shortage(ctx): assert any(r['复核']=='缺口待补' for r in ctx['stages']['7']['rows'])
